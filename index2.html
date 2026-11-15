@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -12,7 +13,6 @@ button { -webkit-appearance: none; appearance: none; font: inherit; }
 
 body{
   margin:0;
-  /* 아이폰: 주소창 높이 변화와 노치/홈바 영역 대응 */
   min-height:100vh;
   min-height:100dvh;
   display:flex;
@@ -24,17 +24,16 @@ body{
     max(24px, env(safe-area-inset-bottom))
     max(20px, env(safe-area-inset-left));
   overflow:hidden;
-  overscroll-behavior:none;      /* 당겨서 튕기는 스크롤 방지 */
+  overscroll-behavior:none;
   -webkit-user-select:none;
   user-select:none;
-  -webkit-touch-callout:none;    /* 길게 눌러도 메뉴 안 뜨게 */
+  -webkit-touch-callout:none;
 
   background-image:
     linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.35)),
     url("01.jpg");
   background-size:cover;
   background-color:#222;
-  /* 어두운 막은 화면 전체, 사진만 100px 위로 */
   background-position:center, center calc(50% - 100px);
   background-repeat:no-repeat;
   transition: background-image .5s ease;
@@ -51,7 +50,7 @@ body{
   text-align:center;
   box-shadow:0 15px 40px rgba(0,0,0,.25);
   position:relative;
-  z-index:10; /* ✅ 클릭 안 막히게 */
+  z-index:10;
   transform: translateY(min(120px, 14vh));
 }
 
@@ -67,13 +66,13 @@ h1{
   max-width:280px;
   height:56px;
   margin:0 auto;
-  touch-action: manipulation; /* ✅ 모바일 탭 반응 개선 */
+  touch-action: manipulation;
 }
 
 .btn{
   position:absolute;
   top:0;
-  width:min(120px, 46%);   /* 작은 아이폰에서도 두 버튼이 안 겹치게 */
+  width:min(120px, 46%);
   height:48px;
   border:none;
   border-radius:30px;
@@ -81,9 +80,9 @@ h1{
   cursor:pointer;
   -webkit-user-select:none;
   user-select:none;
-  touch-action: manipulation;   /* 더블탭 확대 방지 */
-  z-index:20;            /* ✅ 클릭 안 막히게 */
-  pointer-events:auto;   /* ✅ 클릭 안 막히게 */
+  touch-action: manipulation;
+  z-index:20;
+  pointer-events:auto;
   transition: transform .25s ease, left .18s ease, top .18s ease, background .3s ease;
 }
 
@@ -100,7 +99,9 @@ h1{
   font-weight:700;
   color:#ff4d6d;
 }
+
 .card.shake{ animation: shake .4s ease; }
+
 @keyframes shake{
   0%,100%{ translate:0 0; }
   20%{ translate:-10px 0; }
@@ -108,6 +109,7 @@ h1{
   60%{ translate:-6px 0; }
   80%{ translate:6px 0; }
 }
+
 .tear{
   position:fixed;
   top:-40px;
@@ -116,6 +118,7 @@ h1{
   animation: fall 2.2s linear forwards;
   z-index:5;
 }
+
 @keyframes fall{
   100%{ transform:translateY(110vh) rotate(40deg); opacity:.2; }
 }
@@ -152,12 +155,56 @@ h1{
   z-index: 1000;
 }
 
+/* 처음으로 돌아가기 버튼 */
+.restart-btn{
+  display:none;
+  margin:18px auto 0;
+  padding:12px 24px;
+  border:none;
+  border-radius:30px;
+  background:#ff4d6d;
+  color:#fff;
+  font-size:15px;
+  font-weight:700;
+  cursor:pointer;
+  touch-action:manipulation;
+}
+
+/* 마지막 화면 카드 */
+.card.final-screen{
+  position:fixed;
+  left:50%;
+  bottom:calc(16px + env(safe-area-inset-bottom));
+  width:calc(100% - 40px);
+  max-width:420px;
+  padding:20px 18px;
+  transform:translateX(-50%);
+}
+
+/* 마지막 화면에서는 처음 질문과 Yes/No 숨기기 */
+.card.final-screen h1,
+.card.final-screen .btn-container,
+.card.final-screen .plea{
+  display:none;
+}
+
+/* 마지막 화면 문구 */
+.card.final-screen .result{
+  display:block;
+  margin:0;
+}
+
+/* 마지막 화면 돌아가기 버튼 */
+.card.final-screen .restart-btn{
+  display:block;
+}
+
 </style>
 </head>
 
 <body>
-  <div class="card">
-    <h1>
+  <div class="card" id="card">
+    <h1 id="question">
       서원이 생일인데 올래?
     </h1>
 
@@ -169,6 +216,10 @@ h1{
     <div class="plea" id="plea"></div>
 
     <div class="result" id="result">❤️ 뚱깨 생일 참석 확정 ❤️</div>
+
+    <button class="restart-btn" id="restartBtn" type="button">
+      처음으로 돌아가기
+    </button>
   </div>
 
 <!-- 생일 영상 -->
@@ -178,18 +229,18 @@ h1{
 
 <script>
 (function () {
-  const yesBtn = document.getElementById("yesBtn") || document.querySelector(".yes");
-  const noBtn  = document.getElementById("noBtn")  || document.querySelector(".no");
-  const btnArea = document.getElementById("btnArea") || document.querySelector(".btn-container");
+  const yesBtn = document.getElementById("yesBtn");
+  const noBtn = document.getElementById("noBtn");
+  const btnArea = document.getElementById("btnArea");
   const result = document.getElementById("result");
-
-  if (!yesBtn || !noBtn || !btnArea) {
-    // 요소가 없으면(복붙 실수) 그냥 종료
-    return;
-  }
-
   const video = document.getElementById("birthdayVideo");
+  const plea = document.getElementById("plea");
+  const card = document.getElementById("card");
+  const restartBtn = document.getElementById("restartBtn");
 
+  if (!yesBtn || !noBtn || !btnArea || !video) return;
+
+  /* 영상 재생 */
   async function startVideo() {
     video.style.display = "block";
 
@@ -204,37 +255,34 @@ h1{
 
   yesBtn.addEventListener("click", startVideo);
 
+  /* 영상 종료 후 마지막 화면 */
   video.addEventListener("ended", () => {
     video.style.display = "none";
 
     document.body.style.backgroundImage =
       'linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.35)), url("02.jpg")';
 
-    if (result) result.style.display = "block";
+    card.classList.add("final-screen");
+
+    result.style.display = "block";
 
     createHearts();
   });
 
+  /* 하트 효과 */
   function createHearts(){
     for(let i=0;i<20;i++){
       const h=document.createElement("div");
       h.className="heart";
       h.textContent="❤️";
       h.style.left = (Math.random()*window.innerWidth) + "px";
-      h.style.top  = window.innerHeight + "px";
+      h.style.top = window.innerHeight + "px";
       document.body.appendChild(h);
       setTimeout(()=>h.remove(), 2800);
     }
   }
 
-  /* ===== No 버튼 기믹 =====
-     누를수록 단계가 올라감:
-     1) 도망가면서 문구가 바뀜
-     2) Yes는 점점 커지고 No는 점점 작아짐
-     3) 3번째부터 카드가 흔들리고 눈물 이모지가 떨어짐
-     4) 마지막엔 No가 Yes로 변해서 뭘 눌러도 참석 */
-  const plea = document.getElementById("plea");
-  const card = document.querySelector(".card");
+  /* ===== No 버튼 기믹 ===== */
   const pleas = [
     "어? 잘못 누른 거죠? 🤔",
     "다시 한번 생각해 봐… 🥺",
@@ -244,7 +292,9 @@ h1{
     "No 버튼이 지쳤어요 😵",
     "이제 선택지는 하나뿐 😎"
   ];
+
   const noLabels = ["No?", "진짜?", "정말로?", "음…", "…", "😵", "Yes!"];
+
   let tries = 0;
   let lastTry = 0;
   let surrendered = false;
@@ -254,27 +304,37 @@ h1{
              a.bottom + gap < b.top || a.top - gap > b.bottom);
   }
 
-  // 카드 안에서 도망가되 Yes 버튼은 절대 가리지 않음
   function moveNo(){
     const area = btnArea.getBoundingClientRect();
     const box  = card.getBoundingClientRect();
     const yes  = yesBtn.getBoundingClientRect();
+
     const w = noBtn.offsetWidth || 120;
     const h = noBtn.offsetHeight || 48;
     const pad = 10;
-    let x = btnArea.clientWidth - w, y = 0;
+
+    let x = btnArea.clientWidth - w;
+    let y = 0;
 
     for (let i = 0; i < 40; i++){
-      const px = box.left + pad + Math.random() * (box.width  - w - pad*2);
-      const py = box.top  + pad + Math.random() * (box.height - h - pad*2);
-      const r = { left:px, top:py, right:px + w, bottom:py + h };
+      const px = box.left + pad + Math.random() * (box.width - w - pad*2);
+      const py = box.top + pad + Math.random() * (box.height - h - pad*2);
+
+      const r = {
+        left:px,
+        top:py,
+        right:px + w,
+        bottom:py + h
+      };
+
       x = px - area.left;
       y = py - area.top;
+
       if (!overlaps(r, yes, 12)) break;
     }
 
     noBtn.style.left = x + "px";
-    noBtn.style.top  = y + "px";
+    noBtn.style.top = y + "px";
   }
 
   function rainTears(){
@@ -290,10 +350,10 @@ h1{
   }
 
   function dodge(e){
-    if (surrendered) return;          // 항복 후에는 그냥 Yes로 동작
+    if (surrendered) return;
     if (e) e.preventDefault();
 
-    const now = Date.now();           // 터치 한 번에 이벤트가 겹쳐도 1회만 처리
+    const now = Date.now();
     if (now - lastTry < 250) return;
     lastTry = now;
 
@@ -303,42 +363,93 @@ h1{
     plea.textContent = pleas[step];
     noBtn.textContent = noLabels[step];
 
-    // Yes는 커지고 No는 작아짐
-    yesBtn.style.transform = "scale(" + Math.min(1 + tries * 0.07, 1.4) + ")";
-    noBtn.style.transform  = "scale(" + Math.max(1 - tries * 0.08, 0.55) + ")";
+    yesBtn.style.transform =
+      "scale(" + Math.min(1 + tries * 0.07, 1.4) + ")";
+
+    noBtn.style.transform =
+      "scale(" + Math.max(1 - tries * 0.08, 0.55) + ")";
 
     if (tries >= 3){
       card.classList.remove("shake");
-      void card.offsetWidth;          // 애니메이션 다시 시작
+      void card.offsetWidth;
       card.classList.add("shake");
       rainTears();
     }
 
     if (step === pleas.length - 1){
-      // 마지막 단계: No가 Yes로 변신
       surrendered = true;
+
       noBtn.style.background = "#ff4d6d";
       noBtn.style.color = "#fff";
       noBtn.style.transform = "scale(1)";
       yesBtn.style.transform = "scale(1)";
-      noBtn.style.left = "";   // 원래 자리로
+
+      noBtn.style.left = "";
       noBtn.style.top = "";
+
       return;
     }
 
     moveNo();
   }
 
-  // PC: 올리면 도망
+  /* PC: 올리면 도망 */
   noBtn.addEventListener("mouseenter", dodge);
 
-  // 모바일: 누르려는 순간 도망
+  /* 모바일: 누르려는 순간 도망 */
   noBtn.addEventListener("touchstart", dodge, { passive:false });
 
-  // 클릭: 항복 전에는 도망, 항복 후에는 Yes와 똑같이 영상 재생
+  /* 클릭 */
   noBtn.addEventListener("click", (e) => {
-    if (surrendered) { startVideo(); return; }
+    if (surrendered) {
+      startVideo();
+      return;
+    }
+
     dodge(e);
+  });
+
+  /* ===== 처음으로 돌아가기 ===== */
+  restartBtn.addEventListener("click", () => {
+
+    /* 영상 정지 및 초기화 */
+    video.pause();
+    video.currentTime = 0;
+    video.style.display = "none";
+
+    /* 배경 원래대로 복구 */
+    document.body.style.backgroundImage = "";
+
+    /* 마지막 화면 해제 */
+    card.classList.remove("final-screen");
+    card.classList.remove("shake");
+
+    /* 문구 초기화 */
+    result.style.display = "none";
+    plea.textContent = "";
+
+    /* 버튼 표시 복구 */
+    yesBtn.style.display = "";
+    noBtn.style.display = "";
+
+    /* 버튼 위치 및 크기 초기화 */
+    yesBtn.style.transform = "";
+    noBtn.style.transform = "";
+    noBtn.style.left = "";
+    noBtn.style.top = "";
+
+    /* No 버튼 디자인 초기화 */
+    noBtn.textContent = "No";
+    noBtn.style.background = "";
+    noBtn.style.color = "";
+
+    /* No 버튼 기믹 횟수 초기화 */
+    tries = 0;
+    lastTry = 0;
+    surrendered = false;
+
+    /* 기존에 남아 있는 하트와 눈물 제거 */
+    document.querySelectorAll(".heart, .tear").forEach(el => el.remove());
   });
 
 })();
