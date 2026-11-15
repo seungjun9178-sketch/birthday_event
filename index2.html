@@ -22,11 +22,11 @@ body{
   min-height:100dvh;
   display:flex;
   justify-content:center;
-  align-items:center;
+  align-items:flex-end;            /* 글자와 버튼은 화면 아래쪽에 */
   padding:
     max(24px, env(safe-area-inset-top))
     max(20px, env(safe-area-inset-right))
-    max(24px, env(safe-area-inset-bottom))
+    calc(max(24px, env(safe-area-inset-bottom)) + 5vh)
     max(20px, env(safe-area-inset-left));
   overflow:hidden;
   overscroll-behavior:none;
@@ -39,27 +39,19 @@ body{
   -webkit-font-smoothing:antialiased;
 }
 
-/* ===== 배경: 사진 두 장이 천천히 움직이며 부드럽게 교차 ===== */
+/* ===== 배경: 사진 위쪽이 잘리지 않게 맨 위에 맞춤, 두 장이 부드럽게 교차 ===== */
 .bg{
   position:fixed;
-  left:0; right:0;
-  top:-200px; bottom:0;            /* 사진을 100px 위로 올린 것과 같은 효과 */
+  inset:0;
   background-size:cover;
-  background-position:center;
+  background-position:center top;
   background-repeat:no-repeat;
   z-index:0;
   transition:opacity 1.6s ease;
-  animation:drift 26s ease-in-out infinite alternate;
-  will-change:transform;
 }
 .bg1{ background-image:url("01.jpg"); }
 .bg2{ background-image:url("02.jpg"); opacity:0; }
 body.final .bg2{ opacity:1; }
-
-@keyframes drift{
-  from{ transform:scale(1); }
-  to  { transform:scale(1.08); }
-}
 
 /* 사진 위 어두운 막: 아래로 갈수록 진하게 */
 .shade{
@@ -67,20 +59,19 @@ body.final .bg2{ opacity:1; }
   inset:0;
   z-index:1;
   pointer-events:none;
-  background:linear-gradient(to bottom, rgba(0,0,0,.10) 0%, rgba(0,0,0,.30) 45%, rgba(0,0,0,.78) 100%);
+  background:linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 45%, rgba(0,0,0,.55) 68%, rgba(0,0,0,.85) 100%);
 }
 
 /* ===== 카드 상자 없이, 글자와 버튼이 사진 위에 바로 놓임 ===== */
 .card{
   width:100%;
   max-width:420px;
-  padding:34px 16px 30px;
+  padding:20px 16px 0;
   text-align:center;
   position:relative;
   z-index:10;
   color:#fff;
   text-shadow:0 2px 18px rgba(0,0,0,.35);
-  transform: translateY(min(120px, 14vh));
 }
 
 /* 라벨 → 제목 → 버튼 순서로 차례차례 떠오름 */
@@ -304,7 +295,7 @@ h1{
 
 /* 움직임 줄이기 설정을 켠 사람에게는 효과 최소화 */
 @media (prefers-reduced-motion: reduce){
-  .bg, .card.final-screen, .eyebrow, h1, .btn-container{ animation:none; }
+  .card.final-screen, .eyebrow, h1, .btn-container{ animation:none; }
 }
 
 </style>
